@@ -2,6 +2,7 @@ package br.com.presenca.controle.infraestructure.db.memory;
 
 import br.com.presenca.controle.domain.entity.Atividade;
 import br.com.presenca.controle.domain.entity.Presenca;
+import br.com.presenca.controle.domain.exception.EntidadeNaoEncontradaException;
 import br.com.presenca.controle.domain.repository.AtividadeRepository;
 import org.springframework.context.annotation.Profile;
 import org.springframework.stereotype.Repository;
@@ -29,7 +30,7 @@ public class AtividadeRepositoryInMemory implements AtividadeRepository {
     @Override
     public void salvarPresenca(Presenca presenca) {
         final var atividade = this.findById(presenca.getAtividadeId())
-                .orElseThrow(() -> new RuntimeException("Atividade de id " + presenca.getAtividadeId() + " não encontrada ao tentar salvar presenca"));
+                .orElseThrow(() -> new EntidadeNaoEncontradaException("Atividade", presenca.getAtividadeId()));
         if (!atividade.contem(presenca)) {
             throw new RuntimeException("Erro ao salvar presença! presença de id "+presenca.getId()+" não está relacionada a atividade de id "+presenca.getAtividadeId());
         }

@@ -5,13 +5,12 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
 import java.time.LocalDateTime;
-import java.util.ArrayList;
 import java.util.stream.Stream;
 
 class PresencaTest {
 
     private Usuario usuario = new Usuario("id");
-    private Atividade atividade = new Atividade("id", "descricao", 1, new ArrayList<>());
+    private Atividade atividade = Atividade.create("descricao", 1);
     private LocalDateTime fixedClock = LocalDateTime.of(2025, 1, 15, 12, 0, 0);
 
     @Test

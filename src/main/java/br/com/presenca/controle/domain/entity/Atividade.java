@@ -1,5 +1,6 @@
 package br.com.presenca.controle.domain.entity;
 
+import br.com.presenca.controle.domain.exception.TempoDeToleranciaNaoAtingidoException;
 import lombok.Getter;
 
 import java.time.LocalDateTime;
@@ -15,6 +16,7 @@ public class Atividade {
     private String descricao;
     @Getter
     private int tempoDeConclusao; // Minutos que o usuário deve ficar esperar entre a entrada e conclusao
+    @Getter
     private List<Presenca> presencas;
 
     private Atividade(String id, String descricao, int tempoDeConclusao, List<Presenca> presencas) {
@@ -30,6 +32,10 @@ public class Atividade {
     }
 
     public Presenca marcarPresenca(Usuario usuario) {
+        return this.marcarPresenca(usuario, LocalDateTime.now());
+    }
+
+    public Presenca marcarPresenca(Usuario usuario, LocalDateTime horarioBase) {
         final var optionalPresenca = presencas.stream()
                 .sorted()
                 .filter(p -> p.usuarioPresente(usuario))
@@ -41,15 +47,14 @@ public class Atividade {
         }
 
         final var ultimaPresenca = optionalPresenca.get();
-        final var passouTempoDeTolerancia = LocalDateTime.now().isAfter(
+        final var passouTempoDeTolerancia = horarioBase.isAfter(
                 ultimaPresenca.getHorario().plusMinutes(tempoDeConclusao));
         if (passouTempoDeTolerancia) {
             final var presenca = Presenca.registra(usuario, this);
             this.presencas.add(presenca);
             return presenca;
         }
-        //TODO: Criar exception de dominio
-        throw new RuntimeException("Tentativa de marcar nova presença ainda dentro do tempo de tolerancia");
+        throw new TempoDeToleranciaNaoAtingidoException(this);
     }
 
     public boolean contem(Presenca presenca) {
