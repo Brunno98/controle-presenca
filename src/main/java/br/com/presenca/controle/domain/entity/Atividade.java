@@ -1,5 +1,6 @@
 package br.com.presenca.controle.domain.entity;
 
+import br.com.presenca.controle.domain.exception.AtividadeFechadaException;
 import br.com.presenca.controle.domain.exception.TempoDeToleranciaNaoAtingidoException;
 import lombok.Getter;
 
@@ -8,16 +9,14 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 
+@Getter
 public class Atividade {
 
-    @Getter
     private String id;
-    @Getter
     private String descricao;
-    @Getter
     private int tempoDeConclusao; // Minutos que o usuário deve ficar esperar entre a entrada e conclusao
-    @Getter
     private List<Presenca> presencas;
+    private boolean isOpen = true;
 
     private Atividade(String id, String descricao, int tempoDeConclusao, List<Presenca> presencas) {
         this.id = id;
@@ -31,6 +30,10 @@ public class Atividade {
         return new Atividade(id, descricao, tempoDeConclusao, new ArrayList<>());
     }
 
+    public void fechar() {
+        this.isOpen = false;
+    }
+
     public Presenca marcarPresenca(Usuario usuario) {
         return this.marcarPresenca(usuario, LocalDateTime.now());
     }
@@ -41,6 +44,9 @@ public class Atividade {
                 .filter(p -> p.usuarioPresente(usuario))
                 .findFirst();
         if (optionalPresenca.isEmpty()) {
+            if (!this.isOpen) {
+                throw new AtividadeFechadaException(this);
+            }
             final var presenca = Presenca.registra(usuario, this);
             this.presencas.add(presenca);
             return presenca;

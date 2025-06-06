@@ -1,5 +1,6 @@
 package br.com.presenca.controle.domain.entity;
 
+import br.com.presenca.controle.domain.exception.AtividadeFechadaException;
 import br.com.presenca.controle.domain.exception.TempoDeToleranciaNaoAtingidoException;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -39,6 +40,7 @@ class AtividadeTest {
         assertEquals(descricao, novaAtividade.getDescricao());
         assertEquals(tempoDeConclusao, novaAtividade.getTempoDeConclusao());
         assertTrue(novaAtividade.getPresencas().isEmpty());
+        assertTrue(novaAtividade.isOpen());
     }
 
     @Test
@@ -62,7 +64,7 @@ class AtividadeTest {
         atividade.getPresencas().add(primeiraPresenca);
 
         // when
-        Presenca segundaPresenca = atividade.marcarPresenca(usuario);
+        Presenca segundaPresenca = atividade.marcarPresenca(usuario, horarioBase.plusMinutes(31));
 
         // then
         assertNotNull(segundaPresenca);
@@ -108,5 +110,52 @@ class AtividadeTest {
         // then
         assertEquals(2, atividade.getPresencas().size());
         assertNotEquals(presenca1.getUsuarioId(), presenca2.getUsuarioId());
+    }
+
+    @Test
+    @DisplayName("Deve permitir que usuário participante conclua atividade mesmo com atividade fechada")
+    void devePermitirUsuarioParticipanteConcluirAtividadeComAtividadeFechada() {
+        // given
+        Presenca primeiraPresenca = Presenca.registra(usuario, atividade, horarioBase);
+        atividade.getPresencas().add(primeiraPresenca);
+        atividade.fechar();
+
+        // when
+        Presenca segundaPresenca = atividade.marcarPresenca(usuario, horarioBase.plusMinutes(31));
+
+        // then
+        assertNotNull(segundaPresenca);
+        assertEquals(2, atividade.getPresencas().size());
+        assertTrue(segundaPresenca.getHorario().isAfter(primeiraPresenca.getHorario()));
+    }
+
+    @Test
+    @DisplayName("Deve impedir que novo usuário participe de atividade fechada")
+    void deveImpedirNovoUsuarioParticiparDeAtividadeFechada() {
+        // given
+        atividade.fechar();
+        Usuario novoUsuario = new Usuario("novo-usuario");
+
+        // when & then
+        AtividadeFechadaException exception = assertThrows(AtividadeFechadaException.class, () -> {
+            atividade.marcarPresenca(novoUsuario);
+        });
+        assertEquals(atividade, exception.getAtividade());
+    }
+
+    @Test
+    @DisplayName("Deve permitir que usuário participante continue participando mesmo com atividade fechada")
+    void devePermitirUsuarioParticipanteContinuarParticipandoComAtividadeFechada() {
+        // given
+        Presenca primeiraPresenca = Presenca.registra(usuario, atividade, horarioBase);
+        atividade.getPresencas().add(primeiraPresenca);
+        atividade.fechar();
+
+        // when
+        Presenca segundaPresenca = atividade.marcarPresenca(usuario, horarioBase.plusMinutes(31));
+
+        // then
+        assertNotNull(segundaPresenca);
+        assertEquals(2, atividade.getPresencas().size());
     }
 } 
