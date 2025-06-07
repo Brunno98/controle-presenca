@@ -1,17 +1,9 @@
 package br.com.presenca.controle.domain.entity;
 
-import lombok.Getter;
+public record Usuario(String id, Cargo cargo) {
 
-public class Usuario {
-
-    @Getter
-    private String id;
-
-    public Usuario(String id) {
-        this.id = id;
+    public boolean isAdministrador() {
+        return Cargo.ADMINISTRADOR.equals(this.cargo);
     }
 
-    public boolean possuiId(String id) {
-        return this.id.equals(id);
-    }
 }

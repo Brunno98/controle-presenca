@@ -28,7 +28,7 @@ public class MarcarPresencaUseCase {
         Atividade atividade = atividadeRepository.findById(atividadeId)
                 .orElseThrow(() -> new EntidadeNaoEncontradaException("Atividade", atividadeId));
 
-        final var presenca = atividade.marcarPresenca(usuario.getId(), LocalDateTime.now());
+        final var presenca = atividade.marcarPresenca(usuario.id(), LocalDateTime.now());
 
         atividadeRepository.salvarPresenca(presenca);
     }
