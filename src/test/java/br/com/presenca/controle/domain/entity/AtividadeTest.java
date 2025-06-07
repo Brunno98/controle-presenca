@@ -134,11 +134,10 @@ class AtividadeTest {
     void deveImpedirNovoUsuarioParticiparDeAtividadeFechada() {
         // given
         atividade.fechar();
-        Usuario novoUsuario = new Usuario("novo-usuario");
 
         // when & then
         AtividadeFechadaException exception = assertThrows(AtividadeFechadaException.class, () -> {
-            atividade.marcarPresenca(novoUsuario);
+            atividade.marcarPresenca("novo-usuario", horarioBase);
         });
         assertEquals(atividade, exception.getAtividade());
     }
