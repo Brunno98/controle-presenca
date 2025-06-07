@@ -35,19 +35,19 @@ public class Atividade {
     }
 
     public Presenca marcarPresenca(Usuario usuario) {
-        return this.marcarPresenca(usuario, LocalDateTime.now());
+        return this.marcarPresenca(usuario.getId(), LocalDateTime.now());
     }
 
-    public Presenca marcarPresenca(Usuario usuario, LocalDateTime horarioBase) {
+    public Presenca marcarPresenca(String usuarioId, LocalDateTime horarioBase) {
         final var optionalPresenca = presencas.stream()
                 .sorted()
-                .filter(p -> p.usuarioPresente(usuario))
+                .filter(p -> p.usuarioPresente(usuarioId))
                 .findFirst();
         if (optionalPresenca.isEmpty()) {
             if (!this.isOpen) {
                 throw new AtividadeFechadaException(this);
             }
-            final var presenca = Presenca.registra(usuario, this);
+            final var presenca = Presenca.registra(usuarioId, this.getId());
             this.presencas.add(presenca);
             return presenca;
         }
@@ -56,7 +56,7 @@ public class Atividade {
         final var passouTempoDeTolerancia = horarioBase.isAfter(
                 ultimaPresenca.getHorario().plusMinutes(tempoDeConclusao));
         if (passouTempoDeTolerancia) {
-            final var presenca = Presenca.registra(usuario, this);
+            final var presenca = Presenca.registra(usuarioId, this.getId());
             this.presencas.add(presenca);
             return presenca;
         }

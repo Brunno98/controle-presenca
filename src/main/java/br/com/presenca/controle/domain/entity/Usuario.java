@@ -2,8 +2,6 @@ package br.com.presenca.controle.domain.entity;
 
 import lombok.Getter;
 
-import java.util.List;
-
 public class Usuario {
 
     @Getter

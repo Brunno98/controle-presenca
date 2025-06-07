@@ -16,10 +16,12 @@ class AtividadeTest {
     private Usuario usuario;
     private Atividade atividade;
     private LocalDateTime horarioBase;
+    private String usuarioId = "usuario-1";
+    private String atividadeId = "atividade-1";
 
     @BeforeEach
     void setUp() {
-        usuario = new Usuario("usuario-1");
+        usuario = new Usuario(usuarioId);
         atividade = Atividade.create("Atividade Teste", 30); // 30 minutos de tempo de conclusão
         horarioBase = LocalDateTime.of(2024, 1, 1, 10, 0);
     }
@@ -51,7 +53,7 @@ class AtividadeTest {
 
         // then
         assertNotNull(presenca);
-        assertEquals(usuario.getId(), presenca.getUsuarioId());
+        assertEquals(usuarioId, presenca.getUsuarioId());
         assertEquals(atividade.getId(), presenca.getAtividadeId());
         assertEquals(1, atividade.getPresencas().size());
     }
@@ -60,11 +62,11 @@ class AtividadeTest {
     @DisplayName("Deve registrar segunda presença quando tempo mínimo for atingido")
     void deveRegistrarSegundaPresencaQuandoTempoMinimoForAtingido() {
         // given
-        Presenca primeiraPresenca = Presenca.registra(usuario, atividade, horarioBase);
+        Presenca primeiraPresenca = Presenca.registra(usuarioId, atividade.getId(), horarioBase);
         atividade.getPresencas().add(primeiraPresenca);
 
         // when
-        Presenca segundaPresenca = atividade.marcarPresenca(usuario, horarioBase.plusMinutes(31));
+        Presenca segundaPresenca = atividade.marcarPresenca(usuarioId, horarioBase.plusMinutes(31));
 
         // then
         assertNotNull(segundaPresenca);
@@ -76,12 +78,12 @@ class AtividadeTest {
     @DisplayName("Deve lançar exceção ao tentar marcar segunda presença antes do tempo mínimo")
     void deveLancarExcecaoAoMarcarSegundaPresencaAntesDoTempoMinimo() {
         // given
-        Presenca primeiraPresenca = Presenca.registra(usuario, atividade, horarioBase);
+        Presenca primeiraPresenca = Presenca.registra(usuarioId, atividadeId, horarioBase);
         atividade.getPresencas().add(primeiraPresenca);
 
         // when & then
         assertThrows(TempoDeToleranciaNaoAtingidoException.class, () -> {
-            atividade.marcarPresenca(usuario, horarioBase.plusSeconds(1));
+            atividade.marcarPresenca(usuarioId, horarioBase.plusSeconds(1));
         });
     }
 
@@ -89,12 +91,12 @@ class AtividadeTest {
     @DisplayName("Deve verificar se contém presença corretamente")
     void deveVerificarSeContemPresenca() {
         // given
-        Presenca presenca = Presenca.registra(usuario, atividade);
+        Presenca presenca = Presenca.registra(usuarioId, atividadeId);
         atividade.getPresencas().add(presenca);
 
         // when & then
         assertTrue(atividade.contem(presenca));
-        assertFalse(atividade.contem(Presenca.registra(new Usuario("outro-usuario"), atividade)));
+        assertFalse(atividade.contem(Presenca.registra("outro-usuario-id", atividadeId)));
     }
 
     @Test
@@ -116,12 +118,12 @@ class AtividadeTest {
     @DisplayName("Deve permitir que usuário participante conclua atividade mesmo com atividade fechada")
     void devePermitirUsuarioParticipanteConcluirAtividadeComAtividadeFechada() {
         // given
-        Presenca primeiraPresenca = Presenca.registra(usuario, atividade, horarioBase);
+        Presenca primeiraPresenca = Presenca.registra(usuarioId, atividadeId, horarioBase);
         atividade.getPresencas().add(primeiraPresenca);
         atividade.fechar();
 
         // when
-        Presenca segundaPresenca = atividade.marcarPresenca(usuario, horarioBase.plusMinutes(31));
+        Presenca segundaPresenca = atividade.marcarPresenca(usuarioId, horarioBase.plusMinutes(31));
 
         // then
         assertNotNull(segundaPresenca);
@@ -147,12 +149,12 @@ class AtividadeTest {
     @DisplayName("Deve permitir que usuário participante continue participando mesmo com atividade fechada")
     void devePermitirUsuarioParticipanteContinuarParticipandoComAtividadeFechada() {
         // given
-        Presenca primeiraPresenca = Presenca.registra(usuario, atividade, horarioBase);
+        Presenca primeiraPresenca = Presenca.registra(usuarioId, atividadeId, horarioBase);
         atividade.getPresencas().add(primeiraPresenca);
         atividade.fechar();
 
         // when
-        Presenca segundaPresenca = atividade.marcarPresenca(usuario, horarioBase.plusMinutes(31));
+        Presenca segundaPresenca = atividade.marcarPresenca(usuarioId, horarioBase.plusMinutes(31));
 
         // then
         assertNotNull(segundaPresenca);

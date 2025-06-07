@@ -9,16 +9,16 @@ import java.util.stream.Stream;
 
 class PresencaTest {
 
-    private Usuario usuario = new Usuario("id");
-    private Atividade atividade = Atividade.create("descricao", 1);
+    private String usuarioId = "usuario-id";
+    private String atividadeId = "atividae-id";
     private LocalDateTime fixedClock = LocalDateTime.of(2025, 1, 15, 12, 0, 0);
 
     @Test
     @DisplayName("A presença mais recente deve ser a primeira em uma lista ordenada")
     void compare() {
-        final var presencaMaisRecente = Presenca.registra(usuario, atividade, fixedClock.plusMinutes(2));
-        final var presencaMediana = Presenca.registra(usuario, atividade, fixedClock.plusMinutes(1));
-        final var presencaMaisAntiga = Presenca.registra(usuario, atividade, fixedClock);
+        final var presencaMaisRecente = Presenca.registra(usuarioId, atividadeId, fixedClock.plusMinutes(2));
+        final var presencaMediana = Presenca.registra(usuarioId, atividadeId, fixedClock.plusMinutes(1));
+        final var presencaMaisAntiga = Presenca.registra(usuarioId, atividadeId, fixedClock);
 
         final var presencas = Stream.of(presencaMediana, presencaMaisRecente, presencaMaisAntiga).sorted().toList();
 

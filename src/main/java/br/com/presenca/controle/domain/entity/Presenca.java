@@ -22,18 +22,18 @@ public class Presenca implements Comparable<Presenca> {
         this.horario = horario;
     }
 
-    public static Presenca registra(Usuario usuario, Atividade atividade) {
+    public static Presenca registra(String usuarioId, String atividadeId) {
         final var agora = LocalDateTime.now();
-        return Presenca.registra(usuario, atividade, agora);
+        return Presenca.registra(usuarioId, atividadeId, agora);
     }
 
-    public static Presenca registra(Usuario usuario, Atividade atividade, LocalDateTime horario) {
+    public static Presenca registra(String usuarioId, String atividadeId, LocalDateTime horario) {
         final var id = UUID.randomUUID().toString();
-        return new Presenca(id, usuario.getId(), atividade.getId(), horario);
+        return new Presenca(id, usuarioId, atividadeId, horario);
     }
 
-    public boolean usuarioPresente(Usuario usuario) {
-        return usuario.possuiId(this.usuarioId);
+    public boolean usuarioPresente(String usuarioId) {
+        return this.usuarioId.equals(usuarioId);
     }
 
     /**
