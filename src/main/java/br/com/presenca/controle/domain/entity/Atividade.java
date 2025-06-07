@@ -1,6 +1,7 @@
 package br.com.presenca.controle.domain.entity;
 
 import br.com.presenca.controle.domain.exception.AtividadeFechadaException;
+import br.com.presenca.controle.domain.exception.AtividadeJaConcluidaException;
 import br.com.presenca.controle.domain.exception.TempoDeToleranciaNaoAtingidoException;
 import lombok.Getter;
 
@@ -11,52 +12,60 @@ import java.util.UUID;
 
 @Getter
 public class Atividade {
+    private static final int QUANTIDADE_MINIMA_DE_PRESENCA = 2;
 
     private String id;
     private String descricao;
     private int tempoDeConclusao; // Minutos que o usuário deve ficar esperar entre a entrada e conclusao
     private List<Presenca> presencas;
     private boolean isOpen = true;
+    private int presencasNecessarias; // Quantidade de presença necessária para considerar uma atividade concluída
 
-    private Atividade(String id, String descricao, int tempoDeConclusao, List<Presenca> presencas) {
+    private Atividade(String id, String descricao, int tempoDeConclusao, List<Presenca> presencas, int presencasNecessarias) {
         this.id = id;
         this.descricao = descricao;
         this.tempoDeConclusao = tempoDeConclusao;
         this.presencas = presencas;
+        this.presencasNecessarias = presencasNecessarias;
     }
 
     public static Atividade create(String descricao, int tempoDeConclusao) {
-        final var id = UUID.randomUUID().toString();
-        return new Atividade(id, descricao, tempoDeConclusao, new ArrayList<>());
+        return Atividade.create(descricao, tempoDeConclusao, QUANTIDADE_MINIMA_DE_PRESENCA);
     }
+
+    public static Atividade create(String descricao, int tempoDeConclusao, int presencasNecessarias) {
+        final var id = UUID.randomUUID().toString();
+        return new Atividade(id, descricao, tempoDeConclusao, new ArrayList<>(), presencasNecessarias);
+    }
+
 
     public void fechar() {
         this.isOpen = false;
     }
 
-    public Presenca marcarPresenca(Usuario usuario) {
-        return this.marcarPresenca(usuario.getId(), LocalDateTime.now());
-    }
-
     public Presenca marcarPresenca(String usuarioId, LocalDateTime horarioBase) {
-        final var optionalPresenca = presencas.stream()
-                .sorted()
+        final var presencasDoUsuario = presencas.stream()
                 .filter(p -> p.usuarioPresente(usuarioId))
-                .findFirst();
-        if (optionalPresenca.isEmpty()) {
+                .sorted()
+                .toList();
+        if (presencasDoUsuario.isEmpty()) {
             if (!this.isOpen) {
                 throw new AtividadeFechadaException(this);
             }
-            final var presenca = Presenca.registra(usuarioId, this.getId());
+            final var presenca = Presenca.registra(usuarioId, this.getId(), horarioBase);
             this.presencas.add(presenca);
             return presenca;
         }
 
-        final var ultimaPresenca = optionalPresenca.get();
+        if (presencasDoUsuario.size() >= this.presencasNecessarias) {
+            throw new AtividadeJaConcluidaException(this);
+        }
+
+        final var ultimaPresenca = presencasDoUsuario.getFirst();
         final var passouTempoDeTolerancia = horarioBase.isAfter(
                 ultimaPresenca.getHorario().plusMinutes(tempoDeConclusao));
         if (passouTempoDeTolerancia) {
-            final var presenca = Presenca.registra(usuarioId, this.getId());
+            final var presenca = Presenca.registra(usuarioId, this.getId(), horarioBase);
             this.presencas.add(presenca);
             return presenca;
         }

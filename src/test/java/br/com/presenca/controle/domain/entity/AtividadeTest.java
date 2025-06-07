@@ -1,6 +1,7 @@
 package br.com.presenca.controle.domain.entity;
 
 import br.com.presenca.controle.domain.exception.AtividadeFechadaException;
+import br.com.presenca.controle.domain.exception.AtividadeJaConcluidaException;
 import br.com.presenca.controle.domain.exception.TempoDeToleranciaNaoAtingidoException;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -13,7 +14,6 @@ import static org.junit.jupiter.api.Assertions.*;
 
 class AtividadeTest {
 
-    private Usuario usuario;
     private Atividade atividade;
     private LocalDateTime horarioBase;
     private String usuarioId = "usuario-1";
@@ -21,7 +21,6 @@ class AtividadeTest {
 
     @BeforeEach
     void setUp() {
-        usuario = new Usuario(usuarioId);
         atividade = Atividade.create("Atividade Teste", 30); // 30 minutos de tempo de conclusão
         horarioBase = LocalDateTime.of(2024, 1, 1, 10, 0);
     }
@@ -32,15 +31,17 @@ class AtividadeTest {
         // given
         String descricao = "Atividade Teste";
         int tempoDeConclusao = 30;
+        int presencasNecessarias = 3;
 
         // when
-        Atividade novaAtividade = Atividade.create(descricao, tempoDeConclusao);
+        Atividade novaAtividade = Atividade.create(descricao, tempoDeConclusao, presencasNecessarias);
 
         // then
         assertNotNull(novaAtividade);
         assertNotNull(novaAtividade.getId());
         assertEquals(descricao, novaAtividade.getDescricao());
         assertEquals(tempoDeConclusao, novaAtividade.getTempoDeConclusao());
+        assertEquals(presencasNecessarias, novaAtividade.getPresencasNecessarias());
         assertTrue(novaAtividade.getPresencas().isEmpty());
         assertTrue(novaAtividade.isOpen());
     }
@@ -49,7 +50,7 @@ class AtividadeTest {
     @DisplayName("Deve registrar primeira presença com sucesso")
     void deveRegistrarPrimeiraPresencaComSucesso() {
         // when
-        Presenca presenca = atividade.marcarPresenca(usuario);
+        Presenca presenca = atividade.marcarPresenca(usuarioId, horarioBase);
 
         // then
         assertNotNull(presenca);
@@ -102,12 +103,9 @@ class AtividadeTest {
     @Test
     @DisplayName("Deve permitir múltiplas presenças de diferentes usuários")
     void devePermitirMultiplasPresencasDeDiferentesUsuarios() {
-        // given
-        Usuario outroUsuario = new Usuario("usuario-2");
-
         // when
-        Presenca presenca1 = atividade.marcarPresenca(usuario);
-        Presenca presenca2 = atividade.marcarPresenca(outroUsuario);
+        Presenca presenca1 = atividade.marcarPresenca(usuarioId, horarioBase);
+        Presenca presenca2 = atividade.marcarPresenca("usuario-2", horarioBase);
 
         // then
         assertEquals(2, atividade.getPresencas().size());
@@ -115,8 +113,8 @@ class AtividadeTest {
     }
 
     @Test
-    @DisplayName("Deve permitir que usuário participante conclua atividade mesmo com atividade fechada")
-    void devePermitirUsuarioParticipanteConcluirAtividadeComAtividadeFechada() {
+    @DisplayName("Deve permitir que usuário participante continue participando mesmo com atividade fechada")
+    void devePermitirUsuarioParticipanteContinuarParticipandoComAtividadeFechada() {
         // given
         Presenca primeiraPresenca = Presenca.registra(usuarioId, atividadeId, horarioBase);
         atividade.getPresencas().add(primeiraPresenca);
@@ -146,18 +144,65 @@ class AtividadeTest {
     }
 
     @Test
-    @DisplayName("Deve permitir que usuário participante continue participando mesmo com atividade fechada")
-    void devePermitirUsuarioParticipanteContinuarParticipandoComAtividadeFechada() {
+    @DisplayName("Deve impedir nova presença após usuário concluir atividade")
+    void deveImpedirNovaPresencaAposUsuarioConcluirAtividade() {
         // given
-        Presenca primeiraPresenca = Presenca.registra(usuarioId, atividadeId, horarioBase);
-        atividade.getPresencas().add(primeiraPresenca);
-        atividade.fechar();
+        atividade = Atividade.create("Atividade Teste", 30, 2);
+        
+        // Primeira presença
+        atividade.marcarPresenca(usuarioId, horarioBase);
+        
+        // Segunda presença (completa a atividade)
+        atividade.marcarPresenca(usuarioId, horarioBase.plusMinutes(31));
 
+        // when & then
+        assertThrows(AtividadeJaConcluidaException.class, () -> {
+            atividade.marcarPresenca(usuarioId, horarioBase.plusMinutes(62));
+        });
+    }
+
+    @Test
+    @DisplayName("Deve permitir presenças até atingir quantidade necessária")
+    void devePermitirPresencasAteAtingirQuantidadeNecessaria() {
+        // given
+        atividade = Atividade.create("Atividade Teste", 30, 3);
+        
         // when
-        Presenca segundaPresenca = atividade.marcarPresenca(usuarioId, horarioBase.plusMinutes(31));
+        atividade.marcarPresenca(usuarioId, horarioBase);
+        atividade.marcarPresenca(usuarioId, horarioBase.plusMinutes(31));
+        atividade.marcarPresenca(usuarioId, horarioBase.plusMinutes(62));
 
         // then
-        assertNotNull(segundaPresenca);
-        assertEquals(2, atividade.getPresencas().size());
+        assertEquals(3, atividade.getPresencas().size());
+        assertThrows(AtividadeJaConcluidaException.class, () -> {
+            atividade.marcarPresenca(usuarioId, horarioBase.plusMinutes(93));
+        });
+    }
+
+    @Test
+    @DisplayName("Deve permitir que diferentes usuários completem a atividade independentemente")
+    void devePermitirDiferentesUsuariosCompletaremAtividadeIndependentemente() {
+        // given
+        atividade = Atividade.create("Atividade Teste", 30, 2);
+        
+        String outroUsuarioId = "usuario-2";
+        
+        // when
+        // Usuário 1 completa a atividade
+        atividade.marcarPresenca(usuarioId, horarioBase);
+        atividade.marcarPresenca(usuarioId, horarioBase.plusMinutes(31));
+        
+        // Usuário 2 ainda pode completar a atividade
+        atividade.marcarPresenca(outroUsuarioId, horarioBase.plusMinutes(31));
+        atividade.marcarPresenca(outroUsuarioId, horarioBase.plusMinutes(62));
+
+        // then
+        assertEquals(4, atividade.getPresencas().size());
+        assertThrows(AtividadeJaConcluidaException.class, () -> {
+            atividade.marcarPresenca(usuarioId, horarioBase.plusMinutes(93));
+        });
+        assertThrows(AtividadeJaConcluidaException.class, () -> {
+            atividade.marcarPresenca(outroUsuarioId, horarioBase.plusMinutes(93));
+        });
     }
 } 

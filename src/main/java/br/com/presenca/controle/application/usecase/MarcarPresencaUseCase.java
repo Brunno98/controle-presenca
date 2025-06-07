@@ -9,6 +9,8 @@ import br.com.presenca.controle.application.command.MarcarPresencaCommand;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
+import java.time.LocalDateTime;
+
 @Service
 @RequiredArgsConstructor
 public class MarcarPresencaUseCase {
@@ -20,12 +22,13 @@ public class MarcarPresencaUseCase {
         final var userId = command.getUserId();
         final var atividadeId = command.getAtividadeId();
 
+        //TODO: Melhorar semantica da validação de usuário existente
         Usuario usuario = usuarioRepository.findById(userId)
                 .orElseThrow(() -> new EntidadeNaoEncontradaException("Usuario", userId));
         Atividade atividade = atividadeRepository.findById(atividadeId)
                 .orElseThrow(() -> new EntidadeNaoEncontradaException("Atividade", atividadeId));
 
-        final var presenca = atividade.marcarPresenca(usuario);
+        final var presenca = atividade.marcarPresenca(usuario.getId(), LocalDateTime.now());
 
         atividadeRepository.salvarPresenca(presenca);
     }
