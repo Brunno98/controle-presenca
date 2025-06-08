@@ -2,7 +2,7 @@ package br.com.presenca.controle.domain.exception;
 
 import br.com.presenca.controle.domain.entity.Atividade;
 
-public class AtividadeFechadaException extends RuntimeException {
+public class AtividadeFechadaException extends DomainException {
     private final Atividade atividade;
 
     public AtividadeFechadaException(Atividade atividade) {
