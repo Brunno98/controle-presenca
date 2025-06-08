@@ -9,12 +9,12 @@ import br.com.presenca.controle.infraestructure.controller.dto.AtividadeListItem
 import br.com.presenca.controle.infraestructure.controller.dto.CriarAtividadeRequest;
 import br.com.presenca.controle.infraestructure.controller.dto.CriarAtividadeResponse;
 import br.com.presenca.controle.infraestructure.controller.dto.MarcarPresencaRequest;
+import br.com.presenca.controle.infraestructure.security.UsuarioSecurity;
 import lombok.RequiredArgsConstructor;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
@@ -38,10 +38,10 @@ public class AtividadeController {
     }
 
     @PostMapping
-    public CriarAtividadeResponse criarAtividade(@RequestBody CriarAtividadeRequest request) {
+    public CriarAtividadeResponse criarAtividade(@RequestBody CriarAtividadeRequest request, @AuthenticationPrincipal UsuarioSecurity usuario) {
         final var descricao = request.descricao();
         final var tempoDeConclusao = request.tempoDeConclusao();
-        final var command = new CriarAtividadeCommand(descricao, tempoDeConclusao);
+        final var command = new CriarAtividadeCommand(usuario.getId().toString(), descricao, tempoDeConclusao);
 
         final var id = this.criarAtividadeUseCase.execute(command);
 
@@ -49,8 +49,8 @@ public class AtividadeController {
     }
 
     @PostMapping("presenca")
-    public void marcarPresenca(@RequestHeader("X-USER-ID") String userId, @RequestBody MarcarPresencaRequest request) {
-        final var command = new MarcarPresencaCommand(userId, request.atividadeId());
+    public void marcarPresenca(@RequestBody MarcarPresencaRequest request, @AuthenticationPrincipal UsuarioSecurity usuario) {
+        final var command = new MarcarPresencaCommand(usuario.getId().toString(), request.atividadeId());
         this.marcarPresencaUseCase.execute(command);
     }
 
