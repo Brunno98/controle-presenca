@@ -44,10 +44,7 @@ public class Atividade {
     }
 
     public Presenca marcarPresenca(String usuarioId, LocalDateTime horarioBase) {
-        final var presencasDoUsuario = presencas.stream()
-                .filter(p -> p.usuarioPresente(usuarioId))
-                .sorted()
-                .toList();
+        final var presencasDoUsuario = getPresencasDoUsuario(usuarioId);
         if (presencasDoUsuario.isEmpty()) {
             if (!this.isOpen) {
                 throw new AtividadeFechadaException(this);
@@ -72,7 +69,26 @@ public class Atividade {
         throw new TempoDeToleranciaNaoAtingidoException(this);
     }
 
+    private List<Presenca> getPresencasDoUsuario(String usuarioId) {
+        return presencas.stream()
+                .filter(p -> p.usuarioPresente(usuarioId))
+                .sorted()
+                .toList();
+    }
+
     public boolean contem(Presenca presenca) {
         return this.presencas.contains(presenca);
+    }
+
+    public AtividadeUsuarioStatus getStatusUsuario(Usuario usuario) {
+        final var quantidadeDePresencas = this.getPresencasDoUsuario(usuario.id()).size();
+
+        if (quantidadeDePresencas == this.presencasNecessarias) {
+            return AtividadeUsuarioStatus.COMPLETO;
+        }
+        if (quantidadeDePresencas == 0) {
+            return AtividadeUsuarioStatus.NAO_INICIADO;
+        }
+        return AtividadeUsuarioStatus.EM_PROGRESSO;
     }
 }

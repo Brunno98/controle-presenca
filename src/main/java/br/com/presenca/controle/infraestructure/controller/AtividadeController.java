@@ -29,11 +29,23 @@ public class AtividadeController {
     private final CriarAtividadeUseCase criarAtividadeUseCase;
     private final MarcarPresencaUseCase marcarPresencaUseCase;
 
+    /*
+     TODO:
+      - levar logica de preencher status para dentro do useCase
+      - Implementar filtros de listagem
+      - Implementar paginação
+     */
     @GetMapping
-    public List<AtividadeListItem> listAll() {
+    public List<AtividadeListItem> listAll(@AuthenticationPrincipal UsuarioSecurity usuario) {
         return listarAtividadesUseCase.execute()
                 .stream()
-                .map(AtividadeListItem::from)
+                .map(atividade -> {
+                    if (usuario == null) {
+                        return AtividadeListItem.from(atividade);
+                    } else {
+                        return AtividadeListItem.withStatus(atividade, usuario.toDomain());
+                    }
+                })
                 .toList();
     }
 

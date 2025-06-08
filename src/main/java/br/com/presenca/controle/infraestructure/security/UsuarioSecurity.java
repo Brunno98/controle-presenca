@@ -1,5 +1,7 @@
 package br.com.presenca.controle.infraestructure.security;
 
+import br.com.presenca.controle.domain.entity.Cargo;
+import br.com.presenca.controle.domain.entity.Usuario;
 import jakarta.persistence.Column;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
@@ -30,5 +32,10 @@ public class UsuarioSecurity implements UserDetails {
     @Override
     public Collection<? extends GrantedAuthority> getAuthorities() {
         return List.of(new SimpleGrantedAuthority("ROLE_" + this.getRole()));
+    }
+
+    public Usuario toDomain() {
+        final String id = this.id == null ? null : this.getId().toString();
+        return new Usuario(id, Cargo.valueOf(this.role));
     }
 }
